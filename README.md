@@ -1,12 +1,15 @@
-# Last Bite
+<div align="center">
 
-**Eat your sandwich. Don't get honked.**
+<a href="https://rain-on-roof.github.io/last-bite/"><img src="assets/og.png" alt="Last Bite — don't get honked" width="100%"></a>
 
+<a href="https://rain-on-roof.github.io/last-bite/"><img src="docs/play.png" alt="Play now" width="300"></a>
+
+**Eat your sandwich. Don't get honked.**<br>
 A tiny browser game by [Rain on Roof](https://github.com/rain-on-roof). You're on a park bench with a sandwich, and a goose has noticed.
 
-▶ **Play:** https://rain-on-roof.github.io/last-bite/
+<img src="docs/gameplay.gif" alt="Gameplay: chewing, getting greedy, getting honked" width="100%">
 
-![Last Bite](assets/og.png)
+</div>
 
 ## How to play
 
@@ -48,6 +51,11 @@ npm test                 # game logic and share links
 
 `tools/og.html` renders the link preview image from the game's own renderer.
 
-## License
+## More from Rain on Roof
+
+<a href="https://rain-on-roof.github.io/rain-fight/"><img src="https://rain-on-roof.github.io/rain-fight/assets/og.jpg" width="420" alt="Rain Fight"></a><br>
+**[Rain Fight](https://github.com/rain-on-roof/rain-fight)**: a rooftop fighting game in the rain. The goose came back, and it learned to fight.
+
+---
 
 MIT © Rain on Roof
