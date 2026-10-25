@@ -82,9 +82,9 @@ function toast(text) {
 
 /* ---------- flow ---------- */
 
-function startRun() {
+function startRun(options = {}) {
   audio.unlock();
-  state.game = createGame({});
+  state.game = createGame(options);
   state.goose = createGooseAnimator();
   state.goose.pose.hx += 0;
   state.fx = createFx();
@@ -254,6 +254,10 @@ function handleEvents(events) {
       popText(state.fx, T.next, SANDWICH.x, SANDWICH.y - 150, { size: 38, color: '#ffd54a', life: 0.9, rise: 50, rot: -0.08 });
     } else if (ev.type === 'tell') {
       shake(state.fx, 3);
+    } else if (ev.type === 'fakeout') {
+      // The goose was only messing with you.
+      const spot = gooseSpot(g.goose.dist);
+      popText(state.fx, T.jk, spot.x + 150 * spot.scale, spot.y - 230 * spot.scale, { size: 30, color: '#ffffff', life: 0.9, rise: 40, rot: 0.1 });
     } else if (ev.type === 'strike') {
       const spot = gooseSpot(g.goose.dist);
       shake(state.fx, 24);
@@ -277,6 +281,11 @@ function update(dt) {
   if (state.screen === 'play' && g) handleEvents(step(g, dt, state.chewing));
   if (state.screen === 'over') {
     state.overTime += dt;
+    // Smug chewing: crumbs fall from the beak now and then.
+    if (state.overTime > 1 && Math.random() < dt * 2.2) {
+      const spot = gooseSpot(0);
+      burst(state.fx, 'crumbs', spot.x + 150, spot.y - 300, 3);
+    }
     state.gone = Math.min(1, state.gone + dt * 1.1);
   }
   state.sandwichPop = Math.min(1, state.sandwichPop + dt * 3.2);

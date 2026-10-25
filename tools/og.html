@@ -1,0 +1,91 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>og</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1200" height="630"></canvas>
+<script type="module">
+// Renders assets/og.png from the game's own renderer: open at 1200x630 and screenshot.
+import { createScene, drawBackground, drawForeground, W } from '../src/render/scene.js';
+import { createGooseAnimator, updateGoose, drawGoose } from '../src/render/goose.js';
+import { drawSandwich, drawHands } from '../src/render/sandwich.js';
+import { DISPLAY_FONT } from '../src/render/fx.js';
+import { INK } from '../src/render/paint.js';
+
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const k = 1.25;
+const scene = createScene(11, k * 2);
+const goose = createGooseAnimator();
+for (let i = 0; i < 90; i++) updateGoose(goose, 1 / 60, { mood: 'tell', time: i / 60 });
+goose.moodTime = 0.5;
+
+// Right side: a crop of the park with the goose about to strike.
+ctx.save();
+ctx.translate(520, -470);
+ctx.scale(k, k);
+drawBackground(ctx, scene, 6);
+drawGoose(ctx, goose, { x: 120, y: 842, scale: 1.22, time: 6, anger: 1 });
+drawForeground(ctx, scene, 6);
+drawHands(ctx, { x: 420, y: 860, eaten: 0.25, time: 6, layer: 'back' });
+drawSandwich(ctx, { x: 420, y: 860, eaten: 0.25, k: k * 2 });
+drawHands(ctx, { x: 420, y: 860, eaten: 0.25, time: 6, layer: 'front' });
+ctx.restore();
+
+// Left panel.
+const panel = new Path2D();
+panel.moveTo(0, 0);
+panel.lineTo(640, 0);
+panel.bezierCurveTo(590, 200, 690, 420, 610, 630);
+panel.lineTo(0, 630);
+panel.closePath();
+ctx.save();
+ctx.lineWidth = 16;
+ctx.strokeStyle = INK;
+ctx.stroke(panel);
+const g = ctx.createLinearGradient(0, 0, 0, 630);
+g.addColorStop(0, '#ffd23f');
+g.addColorStop(1, '#ffb52e');
+ctx.fillStyle = g;
+ctx.fill(panel);
+ctx.restore();
+
+function title(text, x, y, size, fill, rot) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.font = `900 ${size}px ${DISPLAY_FONT}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.lineJoin = 'round';
+  ctx.fillStyle = INK;
+  ctx.fillText(text, 0, size * 0.09);
+  ctx.lineWidth = size * 0.16;
+  ctx.strokeStyle = INK;
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = fill;
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+title('LAST', 70, 230, 150, '#ffffff', -0.05);
+title('BITE', 70, 380, 176, '#ffffff', -0.05);
+
+ctx.save();
+ctx.translate(74, 450);
+ctx.rotate(-0.03);
+const pill = new Path2D();
+pill.roundRect(0, 0, 470, 66, 33);
+ctx.lineWidth = 10;
+ctx.strokeStyle = INK;
+ctx.stroke(pill);
+ctx.fillStyle = '#fff8ea';
+ctx.fill(pill);
+ctx.fillStyle = INK;
+ctx.font = `900 30px ${DISPLAY_FONT}`;
+ctx.textBaseline = 'middle';
+ctx.fillText("Don't get honked.", 28, 35);
+ctx.restore();
+
+ctx.fillStyle = 'rgba(43,33,49,0.75)';
+ctx.font = '700 24px system-ui, sans-serif';
+ctx.fillText('a game by Rain on Roof', 78, 585);
+document.title = 'og-ready';
+</script>

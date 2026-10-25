@@ -2,7 +2,7 @@
 <style>body{margin:0;background:#222;display:grid;place-items:center;min-height:100vh}canvas{height:96vh;aspect-ratio:9/16}</style>
 <canvas id="c"></canvas>
 <script type="module">
-import { createScene, drawBackground, drawForeground, drawVignette, W, H } from './src/render/scene.js';
+import { createScene, drawBackground, drawForeground, drawVignette, W, H } from '../src/render/scene.js';
 const c = document.getElementById('c'); const k = 2; c.width = W*k; c.height = H*k;
 const ctx = c.getContext('2d'); const scene = createScene(7, k);
 function frame(ms){ const t = ms/1000; ctx.setTransform(k,0,0,k,0,0); drawBackground(ctx, scene, t); window.devDraw && window.devDraw(ctx, t); drawForeground(ctx, scene, t); drawVignette(ctx, 0); requestAnimationFrame(frame); }

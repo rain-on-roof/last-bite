@@ -91,6 +91,9 @@ export function drawGoose(ctx, anim, view) {
 
   drawLegs(ctx, { w, walking, mood, time });
 
+  const twitch = anim.twitch;
+  const head = { x: pose.hx - twitch * 6, y: pose.hy - twitch * 8, a: pose.ha - twitch * 0.25 };
+
   ctx.save();
   // Short legs: the body sits LEG_DROP lower than the rig's numbers say.
   ctx.translate(0, pose.lower + bob + LEG_DROP);
@@ -98,8 +101,7 @@ export function drawGoose(ctx, anim, view) {
   ctx.rotate(rock);
   ctx.translate(jx, 90 + jy);
 
-  const twitch = anim.twitch;
-  const head = { x: pose.hx - twitch * 6, y: pose.hy - twitch * 8, a: pose.ha - twitch * 0.25 };
+
   const mid = { x: pose.mx, y: pose.my };
 
   const body = bodyPath();
@@ -119,8 +121,12 @@ export function drawGoose(ctx, anim, view) {
 
   ctx.restore();
 
+  // Head-anchored overlays share the body's offset but not its tremble.
+  ctx.save();
+  ctx.translate(0, pose.lower + bob + LEG_DROP);
   if (mood === 'tell') drawAlarm(ctx, head, anim.moodTime, time);
   if (mood === 'innocent') drawNotes(ctx, head, anim.moodTime);
+  ctx.restore();
   if (golden) drawSparkles(ctx, time);
 
   ctx.restore();

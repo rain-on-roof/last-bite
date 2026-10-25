@@ -14,7 +14,7 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: #1d2a3a;
+  background: radial-gradient(120% 90% at 50% 20%, #2f4f73, #16202e 70%);
   overflow: hidden;
   font-family: var(--body);
   color: var(--ink);
@@ -98,8 +98,7 @@ html, body {
 @keyframes pulse { 50% { transform: rotate(2deg) scale(1.06); } }
 
 .hold {
-  margin-top: auto;
-  margin-bottom: 4cqh;
+  margin-top: 4cqh;
   display: flex;
   align-items: center;
   gap: 3cqw;
@@ -124,6 +123,7 @@ html, body {
 @keyframes press { 0%, 100% { transform: scale(1); } 40%, 70% { transform: scale(0.82); box-shadow: 0 0 0 4cqw rgba(255, 255, 255, 0.15); } }
 
 .studio {
+  margin-top: auto;
   pointer-events: auto;
   color: #fff;
   text-decoration: none;

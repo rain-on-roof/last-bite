@@ -2,8 +2,8 @@
 <style>body{margin:0;background:#222;display:grid;place-items:center;min-height:100vh}canvas{height:96vh;aspect-ratio:9/16}</style>
 <canvas id="c"></canvas>
 <script type="module">
-import { createScene, drawBackground, W, H } from './src/render/scene.js';
-import { createGooseAnimator, updateGoose, drawGoose } from './src/render/goose.js';
+import { createScene, drawBackground, W, H } from '../src/render/scene.js';
+import { createGooseAnimator, updateGoose, drawGoose } from '../src/render/goose.js';
 const c = document.getElementById('c'); const k = 2; c.width = W*k; c.height = H*k;
 const ctx = c.getContext('2d'); const scene = createScene(7, k);
 const moods = (new URLSearchParams(location.search).get('m') || 'idle,tell,innocent,strike').split(',');
