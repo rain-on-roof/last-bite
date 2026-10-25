@@ -4,7 +4,7 @@ import { mulberry32, range } from './rng.js';
 
 export const BITE_INTERVAL = 0.26;
 export const NEAREST = 0.18;
-const FIRST_SANDWICH = 8;
+const FIRST_SANDWICH = 10;
 const TELL_FLOOR = 0.3;
 const STEP_INTERVAL = 0.3;
 
