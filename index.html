@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Last Bite — don't get honked</title>
+  <meta name="description" content="Eat your sandwich on a park bench. Stop before the goose strikes. A tiny browser game by Rain on Roof.">
+  <meta name="theme-color" content="#5fb0e6">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Last Bite — don't get honked">
+  <meta property="og:description" content="Eat your sandwich. Let go when the goose stares. How many bites can you get?">
+  <meta property="og:image" content="https://rain-on-roof.github.io/last-bite/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://rain-on-roof.github.io/last-bite/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Last Bite — don't get honked">
+  <meta name="twitter:description" content="Eat your sandwich. Let go when the goose stares.">
+  <meta name="twitter:image" content="https://rain-on-roof.github.io/last-bite/assets/og.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="stage" aria-label="Last Bite">
+    <canvas id="game"></canvas>
+
+    <div id="hud" hidden>
+      <div class="score"><span id="score">0</span></div>
+      <div id="golden-badge" class="badge-gold" hidden></div>
+    </div>
+
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="cross" d="M16 9l6 6M22 9l-6 6"/></svg>
+    </button>
+
+    <section id="title" class="screen">
+      <h1 class="logo"><span>LAST</span><span>BITE</span></h1>
+      <p id="tagline" class="tagline"></p>
+      <p id="challenge" class="challenge" hidden></p>
+      <div class="hold" aria-hidden="true">
+        <span class="finger"></span>
+        <span id="hold-label"></span>
+      </div>
+      <a class="studio" href="https://github.com/rain-on-roof" target="_blank" rel="noopener"><span id="by-title"></span> <b>Rain on Roof</b></a>
+    </section>
+
+    <p id="hint" class="hint" hidden></p>
+
+    <section id="over" class="screen" hidden>
+      <div class="card result">
+        <h2 id="over-title" class="over-title"></h2>
+        <p id="over-line" class="over-line"></p>
+        <div class="big-score"><span id="over-score">0</span><small id="over-unit"></small></div>
+        <p id="over-rank" class="rank"></p>
+        <p id="over-best" class="best"></p>
+        <p id="over-challenge" class="vs" hidden></p>
+      </div>
+      <div class="actions">
+        <button id="again" class="btn btn-main" type="button"></button>
+        <button id="dare" class="btn btn-alt" type="button"></button>
+        <a class="studio" href="https://github.com/rain-on-roof" target="_blank" rel="noopener"><span id="by-over"></span> <b>Rain on Roof</b></a>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" role="status" hidden></div>
+  </main>
+  <noscript>Last Bite needs JavaScript to run.</noscript>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

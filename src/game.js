@@ -26,7 +26,7 @@ export function createGame({ seed = (Math.random() * 2 ** 32) >>> 0, golden } = 
   const temper = {
     patience: range(rand, 1.3, 1.9),
     irritability: range(rand, 0.55, 0.8) * (isGolden ? 1.25 : 1),
-    creep: range(rand, 0.06, 0.1),
+    creep: range(rand, 0.085, 0.13),
     tellBase: range(rand, 0.62, 0.8),
     fakeoutChance: range(rand, 0.18, 0.3),
   };
@@ -44,7 +44,7 @@ export function createGame({ seed = (Math.random() * 2 ** 32) >>> 0, golden } = 
     sandwiches: 0,
     tells: 0,
     goose: {
-      dist: 1,
+      dist: 0.86,
       mood: 'idle',
       moodTime: 0,
       moodLength: 0,

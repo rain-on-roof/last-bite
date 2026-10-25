@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>dev goose</title>
+<style>body{margin:0;background:#222;display:grid;place-items:center;min-height:100vh}canvas{height:96vh;aspect-ratio:9/16}</style>
+<canvas id="c"></canvas>
+<script type="module">
+import { createScene, drawBackground, W, H } from './src/render/scene.js';
+import { createGooseAnimator, updateGoose, drawGoose } from './src/render/goose.js';
+const c = document.getElementById('c'); const k = 2; c.width = W*k; c.height = H*k;
+const ctx = c.getContext('2d'); const scene = createScene(7, k);
+const moods = (new URLSearchParams(location.search).get('m') || 'idle,tell,innocent,strike').split(',');
+const geese = moods.map(m => ({ m, a: createGooseAnimator() }));
+const spots = [[150,470,0.62],[420,470,0.62],[150,900,0.62],[420,900,0.62]];
+let last = 0;
+function frame(ms){ const t = ms/1000; const dt = Math.min(0.05, t-last); last = t;
+ ctx.setTransform(k,0,0,k,0,0); drawBackground(ctx, scene, t);
+ geese.forEach((g,i)=>{ updateGoose(g.a, dt, {mood:g.m, time:t}); const [x,y,s]=spots[i]; drawGoose(ctx, g.a, {x,y,scale:s,time:t,anger: g.m==='idle'?0.2:1, walking: g.m==='creep', walk:(t*1.6)%1, golden: g.m==='victory'}); });
+ requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+</script>
