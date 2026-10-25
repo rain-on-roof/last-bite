@@ -101,3 +101,20 @@ test('rank ladder', () => {
   const ranks = [0, 10, 30, 60, 100].map(rankFor);
   assert.equal(new Set(ranks).size, 5);
 });
+
+test('letting go at the last moment is a close call worth a bonus', () => {
+  const g = createGame({ seed: 6, golden: false });
+  const ev = run(g, 60, (g2) => g2.goose.mood !== 'tell' || g2.goose.moodTime < g2.goose.moodLength * 0.8);
+  const close = ev.filter((e) => e.type === 'innocent' && e.close);
+  assert.ok(close.length > 0);
+  assert.equal(close[0].bonus, 3);
+  const bites = ev.filter((e) => e.type === 'bite').length;
+  assert.equal(g.score, bites + close.reduce((n, e) => n + e.bonus, 0));
+});
+
+test('letting go early is safe but earns nothing extra', () => {
+  const g = createGame({ seed: 6, golden: false });
+  const ev = run(g, 30, releaseOnTell);
+  assert.ok(ev.some((e) => e.type === 'innocent'));
+  assert.ok(ev.filter((e) => e.type === 'innocent').every((e) => !e.close));
+});

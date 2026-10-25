@@ -2,17 +2,27 @@
 // canvases (sky, land); only clouds, water, the duck, birds, leaves and grass
 // are drawn per frame.
 import { mulberry32, range } from '../rng.js';
+import { createGooseAnimator, drawGoose } from './goose.js';
 import { INK, PALETTE as P, circle, ellipse, inkUnder, toonBlobs, softShadow, makeCanvas, lerp } from './paint.js';
 
+// The scene is designed on a 540-wide portrait strip. Wider screens get the
+// same strip centred (offset DX) with extra park painted on either side.
 export const W = 540;
 export const H = 960;
+export const MAX_WORLD_W = 2400;
+let SW = W;
+let DX = 0;
 export const HORIZON = 470;
 export const POND = { x: 410, y: 552, rx: 210, ry: 46 };
 
-export function createScene(seed, pixelScale) {
+export function createScene(seed, pixelScale, worldW = W) {
+  SW = Math.round(Math.max(W, Math.min(MAX_WORLD_W, worldW)));
+  DX = (SW - W) / 2;
   const rand = mulberry32(seed ^ 0x9e3779b9);
   const scene = {
     pixelScale,
+    w: SW,
+    dx: DX,
     sky: paintLayer(pixelScale, (ctx) => paintSky(ctx)),
     land: paintLayer(pixelScale, (ctx) => paintLand(ctx, mulberry32(seed))),
     clouds: makeClouds(rand, pixelScale),
@@ -24,7 +34,7 @@ export function createScene(seed, pixelScale) {
 }
 
 function paintLayer(k, paint) {
-  const c = makeCanvas(W * k, H * k);
+  const c = makeCanvas(SW * k, H * k);
   const ctx = c.getContext('2d');
   ctx.scale(k, k);
   paint(ctx);
@@ -39,9 +49,9 @@ function paintSky(ctx) {
   g.addColorStop(0.55, P.skyMid);
   g.addColorStop(1, P.skyLow);
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, HORIZON + 40);
+  ctx.fillRect(0, 0, SW, HORIZON + 40);
 
-  const sx = 400;
+  const sx = DX + 400;
   const sy = 170;
   const glow = ctx.createRadialGradient(sx, sy, 10, sx, sy, 330);
   glow.addColorStop(0, 'rgba(255, 246, 207, 0.95)');
@@ -49,7 +59,7 @@ function paintSky(ctx) {
   glow.addColorStop(0.5, 'rgba(255, 220, 160, 0.18)');
   glow.addColorStop(1, 'rgba(255, 220, 160, 0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, HORIZON + 40);
+  ctx.fillRect(0, 0, SW, HORIZON + 40);
 
   ctx.fillStyle = P.sun;
   ctx.beginPath();
@@ -98,6 +108,12 @@ function makeClouds(rand, k) {
       ly: -0.26,
     });
     return { canvas: c, w, h, y: pl.y, speed: pl.speed, x: pl.x + rand() * 40 };
+  }).flatMap((cl, i) => {
+    // Extra copies so a wide sky is not bare.
+    const extra = Math.floor((SW - W) / 360);
+    const out = [cl];
+    for (let n = 0; n < extra && i < 2; n++) out.push({ ...cl, x: cl.x + (n + 1) * 420 + i * 130, y: cl.y + ((n * 53) % 60) - 30, speed: cl.speed * (0.8 + n * 0.15) });
+    return out;
   });
 }
 
@@ -108,48 +124,177 @@ function paintLand(ctx, rand) {
   paintSkyline(ctx, rand);
   paintFarTrees(ctx, rand);
   paintGround(ctx, rand);
+  if (DX > 0) paintWings(ctx, rand);
+  ctx.save();
+  ctx.translate(DX, 0);
   paintFarTree(ctx);
   paintPond(ctx, rand);
   paintPath(ctx);
   paintBushes(ctx);
+  ctx.restore();
   paintFlowers(ctx, rand);
+  ctx.save();
+  ctx.translate(DX, 0);
   paintBigTree(ctx);
   paintSign(ctx);
   paintLamp(ctx);
   paintBin(ctx);
+  ctx.restore();
+}
+
+// What a wide screen sees beyond the portrait strip.
+function paintWings(ctx, rand) {
+  const opts = { fill: P.leaf, shade: P.leafShade, light: P.leafLight, glow: P.leafGlow, width: 3 };
+  // A gang of geese grazing far away: the one by the bench has friends.
+  const gang = createGooseAnimator();
+  Object.assign(gang.pose, { hx: 96, hy: -250, mx: 96, my: -200, ha: 0.25 });
+  for (const [x, y, s, flip] of [[DX - 110, 512, 0.24, 1], [DX - 180, 518, 0.27, -1], [DX - 250, 508, 0.21, 1]]) {
+    if (x < 30) continue;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(flip, 1);
+    drawGoose(ctx, gang, { x: 0, y: 0, scale: s, time: x });
+    ctx.restore();
+  }
+  for (let x = DX - 60; x > -60; x -= 230) {
+    toonBlobs(ctx, [[x, 520, 26], [x + 34, 510, 32], [x + 70, 522, 22], [x + 18, 534, 18]], opts);
+  }
+  if (DX > 140) treeAt(ctx, DX - 250, 640, 1.1, -1);
+  if (DX > 420) treeAt(ctx, DX - 560, 600, 0.8, 1);
+  if (DX > 700) treeAt(ctx, DX - 820, 650, 1.15, -1);
+  const R = DX + W;
+  for (let x = R + 40; x < SW + 60; x += 240) {
+    toonBlobs(ctx, [[x, 524, 22], [x + 30, 514, 28], [x + 62, 524, 20]], opts);
+  }
+  if (SW - R > 320) treeAt(ctx, R + 330, 630, 1.0, 1);
+  if (SW - R > 520) treeAt(ctx, R + 620, 590, 0.75, -1);
+  if (SW - R > 760) treeAt(ctx, R + 880, 660, 1.2, 1);
+  if (SW - R > 120) paintBench(ctx, R + 130, 712);
+  if (SW - R > 120) paintFlowerBed(ctx, R + 40, 850, rand);
+}
+
+function treeAt(ctx, x, base, s, flip) {
+  ctx.save();
+  ctx.translate(x, base);
+  ctx.scale(s * flip, s);
+  ctx.translate(-62, -612);
+  paintBigTree(ctx);
+  ctx.restore();
+}
+
+function paintBench(ctx, x, base) {
+  softShadow(ctx, x + 10, base + 4, 120, 16, 0.3);
+  const legs = new Path2D();
+  for (const lx of [-92, 82]) {
+    legs.roundRect(x + lx, base - 70, 12, 72, 4);
+    legs.roundRect(x + lx - 8, base - 4, 28, 8, 3);
+  }
+  inkUnder(ctx, legs, 3);
+  ctx.fillStyle = P.metal;
+  ctx.fill(legs);
+  const slat = (y, h) => {
+    const p = new Path2D();
+    p.roundRect(x - 112, y, 224, h, 5);
+    inkUnder(ctx, p, 3);
+    ctx.fillStyle = P.wood;
+    ctx.fill(p);
+    ctx.fillStyle = P.woodLight;
+    ctx.fillRect(x - 106, y + 2, 212, 3);
+    ctx.fillStyle = P.woodShade;
+    ctx.fillRect(x - 106, y + h - 4, 212, 2);
+  };
+  slat(base - 142, 18);
+  slat(base - 118, 18);
+  slat(base - 74, 16);
+  slat(base - 56, 14);
+  // A pigeon, very calm, unlike some birds.
+  const px = x + 40;
+  const py = base - 76;
+  const body = new Path2D();
+  body.ellipse(px, py - 12, 16, 11, 0, 0, Math.PI * 2);
+  body.moveTo(px + 21, py - 24);
+  body.arc(px + 13, py - 24, 8, 0, Math.PI * 2);
+  inkUnder(ctx, body, 2);
+  ctx.fillStyle = '#9aa7b8';
+  ctx.fill(body);
+  ctx.fillStyle = '#7b8aa0';
+  ctx.beginPath();
+  ctx.ellipse(px - 4, py - 10, 10, 6, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#e0a43a';
+  ctx.beginPath();
+  ctx.moveTo(px + 20, py - 25);
+  ctx.lineTo(px + 26, py - 23);
+  ctx.lineTo(px + 20, py - 21);
+  ctx.fill();
+  ctx.fillStyle = INK;
+  ctx.beginPath();
+  ctx.arc(px + 15, py - 26, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function paintFlowerBed(ctx, x, y, rand) {
+  const bed = new Path2D();
+  bed.ellipse(x + 90, y, 120, 34, 0, 0, Math.PI * 2);
+  inkUnder(ctx, bed, 3, '#5a3a26');
+  ctx.fillStyle = '#7a5236';
+  ctx.fill(bed);
+  const colors = ['#ff6fa5', '#ffd23f', '#ffffff', '#ff8a5c', '#b88cff'];
+  for (let i = 0; i < 26; i++) {
+    const a = rand() * Math.PI * 2;
+    const r = Math.sqrt(rand());
+    const fx = x + 90 + Math.cos(a) * 100 * r;
+    const fy = y + Math.sin(a) * 24 * r - 6;
+    ctx.strokeStyle = P.grassDark;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy + 10);
+    ctx.lineTo(fx, fy);
+    ctx.stroke();
+    ctx.fillStyle = colors[i % colors.length];
+    for (let k = 0; k < 5; k++) {
+      const pa = (k / 5) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(fx + Math.cos(pa) * 4, fy + Math.sin(pa) * 3, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffb627';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function paintHills(ctx) {
-  ctx.fillStyle = '#c9dcc0';
-  ctx.beginPath();
-  ctx.moveTo(0, HORIZON);
-  ctx.bezierCurveTo(90, 395, 210, 400, 300, 440);
-  ctx.bezierCurveTo(380, 410, 470, 400, W, 430);
-  ctx.lineTo(W, HORIZON + 10);
-  ctx.lineTo(0, HORIZON + 10);
-  ctx.fill();
-  ctx.fillStyle = P.hazeHills;
-  ctx.beginPath();
-  ctx.moveTo(0, HORIZON - 10);
-  ctx.bezierCurveTo(120, 425, 230, 428, 330, 455);
-  ctx.bezierCurveTo(420, 440, 480, 436, W, 450);
-  ctx.lineTo(W, HORIZON + 10);
-  ctx.lineTo(0, HORIZON + 10);
-  ctx.fill();
+  for (const [color, base, amp, freq, phase] of [['#c9dcc0', 425, 26, 0.0062, 0.4], [P.hazeHills, 444, 16, 0.009, 2.1]]) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, HORIZON + 10);
+    for (let x = 0; x <= SW + 12; x += 12) {
+      const y = base - Math.sin((x - DX) * freq + phase) * amp - Math.sin((x - DX) * freq * 2.3 + phase * 3) * amp * 0.35;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(SW + 12, HORIZON + 10);
+    ctx.fill();
+  }
 }
 
 function paintSkyline(ctx, rand) {
   const base = HORIZON - 4;
-  let x = 96;
+  const from = Math.max(10, DX * 0.4 + 96);
+  const to = Math.min(SW - 10, DX * 1.6 + 450);
+  const mid = DX + 270;
+  const reach = 420 + DX * 0.6;
+  let x = from;
   const buildings = [];
-  while (x < 450) {
+  while (x < to) {
     const w = range(rand, 18, 34);
-    const h = range(rand, 34, 96) * (1 - Math.abs(x - 270) / 420);
+    const h = range(rand, 34, 96) * (1 - Math.abs(x - mid) / reach);
     buildings.push({ x, w, h });
     x += w - 2;
   }
   // A tower with a spire gives the skyline a silhouette people remember.
-  buildings.push({ x: 236, w: 22, h: 132, spire: true });
+  buildings.push({ x: DX + 236, w: 22, h: 132, spire: true });
   for (const b of buildings) {
     ctx.fillStyle = P.skyline;
     ctx.fillRect(b.x, base - b.h, b.w, b.h);
@@ -172,12 +317,12 @@ function paintSkyline(ctx, rand) {
   haze.addColorStop(0, 'rgba(255, 236, 205, 0)');
   haze.addColorStop(1, 'rgba(255, 236, 205, 0.55)');
   ctx.fillStyle = haze;
-  ctx.fillRect(80, base - 190, 400, 190);
+  ctx.fillRect(from - 20, base - 190, to - from + 40, 190);
 }
 
 function paintFarTrees(ctx, rand) {
   const blobs = [];
-  for (let x = -10; x < W + 20; x += range(rand, 14, 24)) {
+  for (let x = -10; x < SW + 20; x += range(rand, 14, 24)) {
     blobs.push([x, HORIZON - range(rand, 4, 14), range(rand, 12, 22)]);
   }
   toonBlobs(ctx, blobs, {
@@ -196,28 +341,30 @@ function paintGround(ctx, rand) {
   g.addColorStop(0.35, '#86c25c');
   g.addColorStop(1, P.groundNear);
   ctx.fillStyle = g;
-  ctx.fillRect(0, HORIZON - 6, W, H - HORIZON + 6);
+  ctx.fillRect(0, HORIZON - 6, SW, H - HORIZON + 6);
 
   // Soft mowing stripes that converge toward the horizon.
   ctx.save();
   ctx.globalAlpha = 0.07;
   ctx.fillStyle = '#ffffff';
-  for (let i = -6; i < 10; i += 2) {
+  const vx = DX + 270;
+  for (let i = -16; i < 18; i += 2) {
     ctx.beginPath();
-    ctx.moveTo(270 + i * 9, HORIZON);
-    ctx.lineTo(270 + (i + 1) * 9, HORIZON);
-    ctx.lineTo(270 + (i + 1) * 140, H);
-    ctx.lineTo(270 + i * 140, H);
+    ctx.moveTo(vx + i * 9, HORIZON);
+    ctx.lineTo(vx + (i + 1) * 9, HORIZON);
+    ctx.lineTo(vx + (i + 1) * 140, H);
+    ctx.lineTo(vx + i * 140, H);
     ctx.fill();
   }
   ctx.restore();
 
   // Tufts: small v-strokes, bigger and denser near the camera.
   ctx.lineCap = 'round';
-  for (let i = 0; i < 900; i++) {
+  const tufts = Math.round((900 * SW) / W);
+  for (let i = 0; i < tufts; i++) {
     const t = rand() ** 0.7;
     const y = lerp(HORIZON + 6, H, t);
-    const x = rand() * W;
+    const x = rand() * SW;
     const s = lerp(1.2, 7, t);
     ctx.strokeStyle = rand() < 0.5 ? 'rgba(52, 120, 50, 0.45)' : 'rgba(170, 220, 110, 0.5)';
     ctx.lineWidth = lerp(0.8, 2, t);
@@ -362,11 +509,13 @@ function paintBushes(ctx) {
 
 function paintFlowers(ctx, rand) {
   const colors = ['#ffffff', '#ffe066', '#ff9fc8', '#ffb3a1'];
-  for (let i = 0; i < 70; i++) {
+  const count = Math.round((70 * SW) / W);
+  for (let i = 0; i < count; i++) {
     const t = rand() ** 0.8;
     const y = lerp(HORIZON + 30, 900, t);
-    let x = rand() * W;
-    if (Math.abs(x - lerp(292, 350, t)) < lerp(20, 150, t)) x = (x + W * 0.5) % W;
+    let x = rand() * SW;
+    const pathX = DX + lerp(292, 350, t);
+    if (Math.abs(x - pathX) < lerp(20, 150, t)) x = pathX + lerp(30, 180, t) * (rand() < 0.5 ? -1 : 1);
     const r = lerp(1.4, 4.6, t);
     ctx.fillStyle = colors[i % colors.length];
     for (let k = 0; k < 5; k++) {
@@ -598,9 +747,10 @@ function paintBin(ctx) {
 
 function makeBlades(rand) {
   const blades = [];
-  for (let i = 0; i < 70; i++) {
+  const count = Math.round((70 * SW) / W);
+  for (let i = 0; i < count; i++) {
     blades.push({
-      x: range(rand, -10, W + 10),
+      x: range(rand, -10, SW + 10),
       y: range(rand, 900, H + 10),
       h: range(rand, 18, 42),
       lean: range(rand, -6, 6),
@@ -612,15 +762,17 @@ function makeBlades(rand) {
 }
 
 export function drawBackground(ctx, scene, t, wind = 1) {
-  ctx.drawImage(scene.sky, 0, 0, W, H);
+  SW = scene.w;
+  DX = scene.dx;
+  ctx.drawImage(scene.sky, 0, 0, SW, H);
   drawSunRays(ctx, t);
   for (const c of scene.clouds) {
-    const span = W + c.w + 40;
+    const span = SW + c.w + 40;
     const x = ((c.x + t * c.speed) % span) - c.w - 20;
     ctx.drawImage(c.canvas, x, c.y - c.h / 2, c.w, c.h);
   }
   drawBirds(ctx, t);
-  ctx.drawImage(scene.land, 0, 0, W, H);
+  ctx.drawImage(scene.land, 0, 0, SW, H);
   drawWater(ctx, t);
   drawDuck(ctx, scene, t);
   drawLeaves(ctx, scene, t, wind);
@@ -629,7 +781,7 @@ export function drawBackground(ctx, scene, t, wind = 1) {
 
 function drawSunRays(ctx, t) {
   ctx.save();
-  ctx.translate(400, 170);
+  ctx.translate(DX + 400, 170);
   ctx.rotate(t * 0.03);
   ctx.globalAlpha = 0.09 + Math.sin(t * 0.8) * 0.02;
   ctx.fillStyle = '#ffffff';
@@ -648,7 +800,7 @@ function drawBirds(ctx, t) {
   const cycle = 26;
   const k = (t % cycle) / cycle;
   if (k > 0.55) return;
-  const x = lerp(-60, W + 60, k / 0.55);
+  const x = lerp(-60, SW + 60, k / 0.55);
   const y = 120 + Math.sin(k * 9) * 10;
   ctx.save();
   ctx.strokeStyle = 'rgba(43, 33, 49, 0.55)';
@@ -667,6 +819,7 @@ function drawBirds(ctx, t) {
 
 function drawWater(ctx, t) {
   ctx.save();
+  ctx.translate(DX, 0);
   const p = new Path2D();
   ellipse(p, POND.x, POND.y, POND.rx - 2, POND.ry - 2);
   ctx.clip(p);
@@ -689,7 +842,7 @@ function drawWater(ctx, t) {
 }
 
 function drawDuck(ctx, scene, t) {
-  const x = scene.duck.x + Math.sin(t * 0.25) * 40;
+  const x = DX + scene.duck.x + Math.sin(t * 0.25) * 40;
   const y = POND.y + 6 + Math.sin(t * 2.1) * 1.2;
   const dir = Math.cos(t * 0.25) >= 0 ? 1 : -1;
   ctx.save();
@@ -735,7 +888,7 @@ function drawLeaves(ctx, scene, t, wind) {
   for (const leaf of scene.leaves) {
     const k = (t * 0.07 + leaf.phase) % 1;
     const y = lerp(320, 640, k);
-    const x = leaf.x + Math.sin(k * 12 + leaf.phase * 9) * leaf.sway + k * 60 * wind;
+    const x = DX + leaf.x + Math.sin(k * 12 + leaf.phase * 9) * leaf.sway + k * 60 * wind;
     ctx.save();
     ctx.globalAlpha = Math.min(1, (1 - k) * 4, k * 8);
     ctx.fillStyle = k * 10 % 2 < 1 ? P.leafLight : '#d7b54a';
@@ -745,7 +898,7 @@ function drawLeaves(ctx, scene, t, wind) {
 }
 
 function drawButterfly(ctx, t) {
-  const x = 390 + Math.sin(t * 0.6) * 90 + Math.sin(t * 1.7) * 14;
+  const x = DX + 390 + Math.sin(t * 0.6) * 90 + Math.sin(t * 1.7) * 14;
   const y = 650 + Math.sin(t * 0.9) * 40 + Math.cos(t * 2.3) * 10;
   const flap = Math.abs(Math.sin(t * 14));
   ctx.save();
@@ -780,18 +933,18 @@ export function drawForeground(ctx, scene, t, wind = 1) {
   }
 }
 
-export function drawVignette(ctx, tension, flash = 0) {
-  const g = ctx.createRadialGradient(W / 2, H * 0.55, H * 0.25, W / 2, H * 0.55, H * 0.75);
+export function drawVignette(ctx, tension, flash = 0, fw = W, fh = H) {
+  const g = ctx.createRadialGradient(fw / 2, fh * 0.55, fh * 0.25, fw / 2, fh * 0.55, Math.max(fw, fh) * 0.75);
   g.addColorStop(0, 'rgba(40, 10, 20, 0)');
   g.addColorStop(1, `rgba(40, 10, 20, ${0.18 + tension * 0.45})`);
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, fw, fh);
   if (tension > 0) {
     ctx.fillStyle = `rgba(255, 60, 60, ${tension * 0.08})`;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, fw, fh);
   }
   if (flash > 0) {
     ctx.fillStyle = `rgba(255, 255, 255, ${flash})`;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, fw, fh);
   }
 }

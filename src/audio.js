@@ -90,11 +90,25 @@ export function createAudio() {
       [660, 880, 1320].forEach((f, i) => tone({ t: t + i * 0.07, type: 'triangle', from: f, dur: 0.18, peak: 0.18 }));
     },
     strike(t) {
-      noiseBurst({ t, dur: 0.18, type: 'lowpass', freq: 900, peak: 0.7 });
-      honkVoice(t + 0.01, 380, 240, 0.42, 0.75);
-      honkVoice(t + 0.5, 360, 250, 0.3, 0.55);
-      // Wing flaps.
-      for (let i = 0; i < 6; i++) noiseBurst({ t: t + 0.1 + i * 0.09, dur: 0.05, type: 'bandpass', freq: 600, q: 0.8, peak: 0.25 });
+      // Impact: a bass drop and a crack, while the screen freezes.
+      tone({ t, from: 150, to: 32, dur: 0.8, peak: 0.95, attack: 0.004 });
+      tone({ t, type: 'triangle', from: 90, to: 40, dur: 0.5, peak: 0.5 });
+      noiseBurst({ t, dur: 0.22, type: 'lowpass', freq: 1400, peak: 0.9 });
+      // The HONK itself lands with the cut-in, then echoes off the park.
+      const h = t + 0.2;
+      honkVoice(h, 420, 250, 0.85, 1.0, 9);
+      honkVoice(h + 0.02, 840, 500, 0.7, 0.28, 11);
+      honkVoice(h + 0.95, 400, 260, 0.38, 0.38, 7);
+      honkVoice(h + 1.32, 400, 260, 0.3, 0.16, 7);
+      for (let i = 0; i < 8; i++) noiseBurst({ t: h + 0.05 + i * 0.08, dur: 0.05, type: 'bandpass', freq: 600, q: 0.8, peak: 0.28 });
+    },
+    close(t) {
+      // A whoosh for the dodge and a bright ding for the bonus.
+      const { f } = noiseBurst({ t, dur: 0.35, type: 'bandpass', freq: 600, q: 1.2, peak: 0.35, attack: 0.05 });
+      f.frequency.setValueAtTime(500, t);
+      f.frequency.exponentialRampToValueAtTime(3500, t + 0.35);
+      [1320, 1760, 2640].forEach((fr, i) => tone({ t: t + 0.08 + i * 0.06, type: 'triangle', from: fr, dur: 0.25, peak: 0.16 }));
+      SOUNDS.innocent(t + 0.3);
     },
     ui(t) {
       tone({ t, type: 'triangle', from: 520, to: 780, dur: 0.07, peak: 0.15 });
@@ -102,7 +116,7 @@ export function createAudio() {
   };
 
   // Two detuned saws through a nasal band: close enough to a goose.
-  function honkVoice(t, from, to, dur, peak) {
+  function honkVoice(t, from, to, dur, peak, wobble = 0) {
     const band = ctx.createBiquadFilter();
     band.type = 'bandpass';
     band.frequency.value = 1100;
@@ -124,6 +138,16 @@ export function createAudio() {
       o.frequency.setValueAtTime(from, t);
       o.frequency.linearRampToValueAtTime(from * 1.08, t + dur * 0.2);
       o.frequency.exponentialRampToValueAtTime(to, t + dur);
+      if (wobble) {
+        // A ragged vibrato: the difference between a beep and a goose.
+        const lfo = ctx.createOscillator();
+        const depth = ctx.createGain();
+        lfo.frequency.value = wobble + Math.random() * 3;
+        depth.gain.value = from * 0.06;
+        lfo.connect(depth).connect(o.frequency);
+        lfo.start(t);
+        lfo.stop(t + dur + 0.1);
+      }
       o.connect(shaper);
       o.start(t);
       o.stop(t + dur + 0.1);

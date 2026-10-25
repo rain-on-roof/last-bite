@@ -13,9 +13,15 @@ A tiny browser game by [Rain on Roof](https://github.com/rain-on-roof). You're o
 - **Hold** (finger, mouse button or <kbd>Space</kbd>) to chew. Every bite scores.
 - Chewing is loud. The goose creeps closer and gets angrier.
 - When it stares, ruffles up and shows its teeth, **let go**. It will pretend nothing happened.
-- Still chewing when it strikes? **HONK.** Lunch is gone.
+- Let go at the very last moment for a **CLOSE CALL**: slow motion and +3. Greed pays, if you survive it.
+- Still chewing when it strikes? Time freezes, the screen goes manga, and the goose gets its own super-move cut-in. **HONK!!!** Lunch is gone.
 - Some stares are bluffs. Sometimes the goose is golden and every bite counts double.
 - Hit **Dare a friend** to send a link with your score baked in.
+
+Phone and desktop get their own framing: the park is 960 units tall and as wide as your screen, up to 21:9.
+
+![Phone](docs/screens.png)
+![Desktop](docs/screens-desktop.png)
 
 ## Under the hood
 
@@ -27,6 +33,7 @@ Plain HTML, ES modules and Canvas 2D: no build step, no dependencies, no server.
 | `src/render/scene.js` | The park, painted once into offscreen layers, plus clouds, water, the duck and grass animated per frame |
 | `src/render/goose.js` | A rig of parts driven by a few pose numbers that spring between moods |
 | `src/render/sandwich.js` | The sandwich (bitten with a scalloped cut) and the hands holding it |
+| `src/render/honk.js` | The HONK: a two-tone impact frame and a fighting-game cut-in |
 | `src/render/fx.js` | Crumbs, feathers, sparkles, pop-up text, shake and flash |
 | `src/audio.js` | WebAudio synthesis: crunch, hiss, whistle and an honest attempt at a honk |
 | `src/share.js` | Challenge links in the URL hash (`#beat=47`), Web Share or clipboard |

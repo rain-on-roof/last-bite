@@ -7,6 +7,8 @@ export const NEAREST = 0.18;
 const FIRST_SANDWICH = 10;
 const TELL_FLOOR = 0.3;
 const STEP_INTERVAL = 0.3;
+export const CLOSE_CALL = 0.72;
+const CLOSE_BONUS = 3;
 
 const RANKS = [
   [100, 'whisperer'],
@@ -43,6 +45,7 @@ export function createGame({ seed = (Math.random() * 2 ** 32) >>> 0, golden } = 
     sandwich: { size: FIRST_SANDWICH, left: FIRST_SANDWICH },
     sandwiches: 0,
     tells: 0,
+    streak: 0,
     goose: {
       dist: 0.86,
       mood: 'idle',
@@ -51,6 +54,7 @@ export function createGame({ seed = (Math.random() * 2 ** 32) >>> 0, golden } = 
       suspicion: 0,
       threshold: 0,
       fake: false,
+      releasedAt: -1,
       walk: 0,
       stepClock: 0,
     },
@@ -103,6 +107,8 @@ export function step(game, dt, chewing) {
   const closeness = 1 - goose.dist;
   if (goose.mood === 'tell') {
     const length = goose.moodLength;
+    if (!chewing && goose.releasedAt < 0) goose.releasedAt = goose.moodTime / length;
+    if (chewing) goose.releasedAt = -1;
     if (goose.fake && goose.moodTime >= length * 0.55) {
       goose.suspicion = goose.threshold * 0.6;
       rollThreshold(game);
@@ -118,7 +124,16 @@ export function step(game, dt, chewing) {
       goose.suspicion *= 0.35;
       rollThreshold(game);
       setMood(goose, 'innocent', range(game.rand, 1.1, 1.6));
-      events.push({ type: 'innocent' });
+      // Letting go at the last moment pays: greed rewarded, once you survive it.
+      const close = goose.releasedAt >= CLOSE_CALL;
+      game.streak += 1;
+      if (close) {
+        const bonus = CLOSE_BONUS * (game.golden ? 2 : 1);
+        game.score += bonus;
+        events.push({ type: 'innocent', close: true, bonus, streak: game.streak });
+      } else {
+        events.push({ type: 'innocent', close: false, bonus: 0, streak: game.streak });
+      }
     }
     return events;
   }
@@ -151,6 +166,7 @@ export function step(game, dt, chewing) {
   if (goose.suspicion >= goose.threshold) {
     game.tells += 1;
     goose.fake = game.tells > 1 && game.rand() < game.temper.fakeoutChance;
+    goose.releasedAt = chewing ? -1 : 0;
     setMood(goose, 'tell', tellLength(game));
     events.push({ type: 'tell' });
   }
